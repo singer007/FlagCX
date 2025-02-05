@@ -4,6 +4,7 @@ BUILDDIR ?= $(abspath ./build)
 USE_NVIDIA ?= 0
 USE_ILUVATAR_COREX ?= 0
 USE_CAMBRICON ?= 0
+USE_ENFLAME ?= 0
 USE_GLOO ?= 0
 
 # set to empty if not provided
@@ -18,6 +19,8 @@ ifeq ($(strip $(DEVICE_HOME)),)
 		DEVICE_HOME = /usr/local/corex
 	else ifeq ($(USE_CAMBRICON), 1)
 		DEVICE_HOME = $(NEUWARE_HOME)
+	else ifeq ($(USE_ENFLAME), 1)
+		DEVICE_HOME = /opt/tops
 	else
 		DEVICE_HOME = /usr/local/cuda
 	endif
@@ -30,6 +33,8 @@ ifeq ($(strip $(CCL_HOME)),)
 		CCL_HOME = /usr/local/corex
 	else ifeq ($(USE_CAMBRICON), 1)
 		CCL_HOME = $(NEUWARE_HOME)
+	else ifeq ($(USE_ENFLAME), 1)
+		CCL_HOME = /usr
 	else
 		CCL_HOME = /usr/local/nccl/build
 	endif
@@ -78,6 +83,14 @@ else ifeq ($(USE_CAMBRICON), 1)
 	CCL_INCLUDE = $(CCL_HOME)/include
 	CCL_LINK = -lcncl
 	ADAPTOR_FLAG = -DUSE_CAMBRICON_ADAPTOR
+else ifeq ($(USE_ENFLAME), 1)
+	DEVICE_LIB = $(DEVICE_HOME)/lib
+	DEVICE_INCLUDE = $(DEVICE_HOME)/include/tops
+	DEVICE_LINK = -ltopsrt
+	CCL_LIB = $(CCL_HOME)/lib
+	CCL_INCLUDE = $(CCL_HOME)/include
+	CCL_LINK = -leccl
+	ADAPTOR_FLAG = -DUSE_ENFLAME_ADAPTOR
 else
 	DEVICE_LIB = $(DEVICE_HOME)/lib64
 	DEVICE_INCLUDE = $(DEVICE_HOME)/include
@@ -127,6 +140,7 @@ print_var:
 	@echo "USE_NVIDIA: $(USE_NVIDIA)"
 	@echo "USE_ILUVATAR_COREX: $(USE_ILUVATAR_COREX)"
 	@echo "USE_CAMBRICON: $(USE_CAMBRICON)"
+	@echo "USE_ENFLAME: $(USE_ENFLAME)"
 	@echo "USE_GLOO: $(USE_GLOO)"
 	@echo "DEVICE_LIB: $(DEVICE_LIB)"
 	@echo "DEVICE_INCLUDE: $(DEVICE_INCLUDE)"
