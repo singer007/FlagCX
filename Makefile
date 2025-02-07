@@ -85,7 +85,7 @@ else ifeq ($(USE_CAMBRICON), 1)
 	ADAPTOR_FLAG = -DUSE_CAMBRICON_ADAPTOR
 else ifeq ($(USE_ENFLAME), 1)
 	DEVICE_LIB = $(DEVICE_HOME)/lib
-	DEVICE_INCLUDE = $(DEVICE_HOME)/include/tops
+	DEVICE_INCLUDE = $(DEVICE_HOME)/include
 	DEVICE_LINK = -ltopsrt
 	CCL_LIB = $(CCL_HOME)/lib
 	CCL_INCLUDE = $(CCL_HOME)/include

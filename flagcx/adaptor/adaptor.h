@@ -17,11 +17,13 @@ extern struct flagcxCCLAdaptor glooAdaptor;
 extern struct flagcxCCLAdaptor ncclAdaptor;
 extern struct flagcxCCLAdaptor ixncclAdaptor;
 extern struct flagcxCCLAdaptor cnclAdaptor;
+extern struct flagcxCCLAdaptor ecclAdaptor;
 extern struct flagcxCCLAdaptor* cclAdaptors[];
 
 extern struct flagcxDeviceAdaptor cudaAdaptor;
 extern struct flagcxDeviceAdaptor ixcudaAdaptor;
 extern struct flagcxDeviceAdaptor mluAdaptor;
+extern struct flagcxDeviceAdaptor gcuAdaptor;
 extern struct flagcxDeviceAdaptor* deviceAdaptor;
 
 struct flagcxCCLAdaptor {

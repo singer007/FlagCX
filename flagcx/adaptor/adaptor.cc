@@ -21,4 +21,11 @@
   struct flagcxCCLAdaptor* cclAdaptors[NCCLADAPTORS] = {NULL, &cnclAdaptor};
 #endif
   struct flagcxDeviceAdaptor* deviceAdaptor = &mluAdaptor;
+#elif USE_ENFLAME_ADAPTOR
+#ifdef USE_GLOO_ADAPTOR
+  struct flagcxCCLAdaptor* cclAdaptors[NCCLADAPTORS] = {&glooAdaptor, &ecclAdaptor};
+#else
+  struct flagcxCCLAdaptor* cclAdaptors[NCCLADAPTORS] = {NULL, &ecclAdaptor};
+#endif
+  struct flagcxDeviceAdaptor* deviceAdaptor = &gcuAdaptor;
 #endif
