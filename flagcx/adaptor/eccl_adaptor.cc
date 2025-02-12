@@ -44,7 +44,7 @@ flagcxResult_t ecclAdaptorGetUniqueId(flagcxUniqueId_t *uniqueId) {
     if (*uniqueId == NULL) {
         flagcxCalloc(uniqueId, 1);
     }
-    return (flagcxResult_t)e2f_ret_map[ecclGetUniqueId((ecclUniqueId *)(*uniqueId))];
+    return (flagcxResult_t)ecclGetUniqueId((ecclUniqueId *)(*uniqueId));
 }
 
 const char* ecclAdaptorGetErrorString(flagcxResult_t result) {
@@ -133,7 +133,7 @@ flagcxResult_t ecclAdaptorBroadcast(const void* sendbuff, void* recvbuff, size_t
 flagcxResult_t ecclAdaptorAllReduce(const void* sendbuff, void* recvbuff, size_t count,
                                     flagcxDataType_t datatype, flagcxRedOp_t op,
                                     flagcxInnerComm_t comm, flagcxStream_t stream) {
-    return flagcxUnhandledDeviceError;
+    return (flagcxResult_t)ecclAllReduce(sendbuff, recvbuff, count, (ecclDataType_t)datatype, (ecclRedOp_t)op, comm->base, stream->base);
 }
 
 //TODO: unsupported

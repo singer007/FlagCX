@@ -1,5 +1,6 @@
 #include "flagcx.h"
 #include "adaptor.h"
+#include "adaptor/adaptor.h"
 #include "bootstrap.h"
 #include "flagcx_hetero.h"
 #include "comm.h"
@@ -7,6 +8,8 @@
 #include "check.h"
 #include "param.h"
 #include "cluster.h"
+#include "service/check.h"
+#include "service/debug.h"
 
 #include <cassert>
 #include <stdio.h>
@@ -310,7 +313,7 @@ flagcxResult_t flagcxCommInitRank(flagcxComm_t *comm, int nranks, flagcxUniqueId
     memset((void *)commId, 0, sizeof(*commId));
     if ((*comm)->homo_rank == 0)
     {
-        cclAdaptors[flagcxCCLAdaptorDevice]->getUniqueId(&commId);
+        FLAGCXCHECK(cclAdaptors[flagcxCCLAdaptorDevice]->getUniqueId(&commId));
     }
     flagcxUniqueId *uniqueIdData;
     FLAGCXCHECK(flagcxCalloc(&uniqueIdData, nranks));

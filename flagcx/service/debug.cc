@@ -27,6 +27,7 @@ void flagcxDebugInit() {
   pthread_mutex_lock(&flagcxDebugLock);
   if (flagcxDebugLevel != -1) { pthread_mutex_unlock(&flagcxDebugLock); return; }
   const char* flagcx_debug = flagcxGetEnv("FLAGCX_DEBUG");
+
   int tempNcclDebugLevel = -1;
   if (flagcx_debug == NULL) {
     tempNcclDebugLevel = FLAGCX_LOG_NONE;
@@ -169,9 +170,9 @@ void flagcxDebugLog(flagcxDebugLogLevel level, unsigned long flags, const char *
   }
 
   int cudaDev = 0;
-  /**
-   * TODO: How to get the GPU currently in use
-   **/
+  if (!(level == FLAGCX_LOG_TRACE && flags == FLAGCX_CALL)) {
+    deviceAdaptor->getDevice(&cudaDev);
+  }
 
   char buffer[1024];
   size_t len = 0;

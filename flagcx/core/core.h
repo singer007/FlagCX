@@ -19,5 +19,6 @@
 #include "alloc.h"
 #include "utils.h"
 #include "param.h"
+#include "adaptor.h"
 
 #endif // end include guard
