@@ -60,20 +60,24 @@ int main(int argc, char *argv[]){
 
         devHandle->deviceMemcpy(sendbuff, hello, size, flagcxMemcpyHostToDevice, NULL);
 
-        if (proc == 0 && print_buffer) {
+        //if (proc == 0 && print_buffer) {
             printf("sendbuff = ");
             printf("%s", (const char *)((char *)hello));
             printf("%s", (const char *)((char *)hello + size/3));
             printf("%s\n", (const char *)((char *)hello + size/3*2));
-        }
+        //}
 
+        printf("S60 warmup run ... sendbuff %p recvbuff %p\n", sendbuff, recvbuff);
         for(int i=0;i<num_warmup_iters;i++){
             flagcxGroupStart();
             flagcxSend(sendbuff, count, DATATYPE, sendPeer, comm, stream);
             flagcxRecv(recvbuff, count, DATATYPE, recvPeer, comm, stream);
+            printf("S60 begin call flagcxGroupEnd ... \n");
             flagcxGroupEnd();
         }
+        printf("S60 warmup run async...\n");
         devHandle->streamSynchronize(stream);
+        printf("S60 warmup run async end...\n");
         
         MPI_Barrier(MPI_COMM_WORLD);
 

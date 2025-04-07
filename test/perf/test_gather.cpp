@@ -120,6 +120,7 @@ int main(int argc, char *argv[]){
             }
             devHandle->deviceFree(sendbuff, flagcxMemDevice);
             devHandle->deviceFree(hello, flagcxMemHost);
+            break;
         }
         if (proc == 0) {
             double alg_bw = sum_alg_bw / test_count;
