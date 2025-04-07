@@ -165,25 +165,38 @@ flagcxResult_t ecclAdaptorAllReduce(const void* sendbuff, void* recvbuff, size_t
     return (flagcxResult_t)ecclAllReduce(sendbuff, recvbuff, count, (ecclDataType_t)datatype, (ecclRedOp_t)op, comm->base, stream->base);
 }
 
-//TODO: unsupported
 flagcxResult_t ecclAdaptorReduceScatter(const void* sendbuff, void* recvbuff, size_t recvcount,
                                         flagcxDataType_t datatype, flagcxRedOp_t op,
                                         flagcxInnerComm_t comm, flagcxStream_t stream) {
-    return flagcxUnhandledDeviceError;
+    return (flagcxResult_t)ecclReduceScatter(sendbuff, recvbuff, recvcount, (ecclDataType_t)datatype, (ecclRedOp_t)op, comm->base, stream->base);
 }
 
-//TODO: unsupported
 flagcxResult_t ecclAdaptorAllGather(const void* sendbuff, void* recvbuff, size_t sendcount,
                                     flagcxDataType_t datatype, flagcxInnerComm_t comm,
                                     flagcxStream_t stream) {
-    return flagcxUnhandledDeviceError;
+    return (flagcxResult_t)ecclAllGather(sendbuff, recvbuff, sendcount, (ecclDataType_t)datatype, comm->base, stream->base);
 }
 
-//TODO: unsupported
 flagcxResult_t ecclAdaptorAlltoAll(const void* sendbuff, void* recvbuff, size_t count,
                                    flagcxDataType_t datatype, flagcxInnerComm_t comm,
                                    flagcxStream_t stream) {
-    return flagcxUnhandledDeviceError;
+    int rank, nranks;
+    ecclResult_t res = ecclSuccess;
+    res = ecclCommUserRank(comm->base, &rank);
+    res = ecclCommCount(comm->base, &nranks);
+
+    size_t size = count * getFlagcxDataTypeSize(datatype);
+    const char* buffer_in = static_cast<const char*>(sendbuff);
+    char* buffer_out = static_cast<char*>(recvbuff);
+
+    res = ecclGroupStart();
+    for (int r = 0; r < nranks; r++) {
+        res = ecclSend(static_cast<const void*>(buffer_in + r * size), size, ecclChar, r, comm->base, stream->base);
+        res = ecclRecv(static_cast<void*>(buffer_out + r * size), size, ecclChar, r, comm->base, stream->base);
+    }
+    res = ecclGroupEnd();
+
+    return (flagcxResult_t)res;
 }
 
 flagcxResult_t ecclAdaptorSend(const void* sendbuff, size_t count,
