@@ -7,6 +7,7 @@
 #include "adaptor.h"
 #define ENABLE_TIMER 0
 #include "timer.h"
+#include "enflame_adaptor.h"
 
 flagcxResult_t flagcxTransportP2pSetup(struct flagcxHeteroComm* comm, struct flagcxTopoGraph* graph, int connIndex, int* highestTransportType/*=NULL*/) {
   flagcxIbHandle *handle = NULL;

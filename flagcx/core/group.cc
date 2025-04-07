@@ -14,6 +14,7 @@
 #include "assert.h"
 #include "net.h"
 #include "adaptor.h"
+#include "enflame_adaptor.h"
 #include "launch_kernel.h"
 
 __thread int flagcxGroupDepth = 0;
@@ -29,14 +30,12 @@ __thread struct flagcxIntruQueue<struct flagcxAsyncJob, &flagcxAsyncJob::next> f
 flagcxResult_t flagcxHeteroGroupStart() {
   flagcxResult_t ret = flagcxSuccess;
   FLAGCXCHECK(flagcxGroupStartInternal());
-  TRACE_CALL("flagcxGroupStart()");
   return ret;
 }
 
 flagcxResult_t flagcxHeteroGroupEnd() {
   flagcxResult_t ret = flagcxSuccess;
   FLAGCXCHECKGOTO(flagcxGroupEndInternal(), ret, exit);
-  TRACE_CALL("flagcxGroupEnd()");
 exit:
   return ret;
 }

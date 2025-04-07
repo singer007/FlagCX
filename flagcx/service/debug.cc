@@ -169,10 +169,10 @@ void flagcxDebugLog(flagcxDebugLogLevel level, unsigned long flags, const char *
     tid = syscall(SYS_gettid);
   }
 
-  int cudaDev = 0;
-  if (!(level == FLAGCX_LOG_TRACE && flags == FLAGCX_CALL)) {
-    deviceAdaptor->getDevice(&cudaDev);
-  }
+  int cudaDev = 1;
+  // if (!(level == FLAGCX_LOG_TRACE && flags == FLAGCX_CALL)) {
+  //   deviceAdaptor->getDevice(&cudaDev);
+  // }
 
   char buffer[1024];
   size_t len = 0;

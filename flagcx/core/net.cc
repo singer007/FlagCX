@@ -2,6 +2,7 @@
 #include "device.h"
 #include "proxy.h"
 #include "adaptor.h"
+#include "enflame_adaptor.h"
 
 flagcxResult_t flagcxProxySend(sendNetResources *resources, void* data, size_t size, flagcxProxyArgs *args){
     if(args->transmitted < args->chunkSteps){
@@ -11,6 +12,7 @@ flagcxResult_t flagcxProxySend(sendNetResources *resources, void* data, size_t s
             int step = args->waitCopy & stepMask;
             args->subs[step].stepSize = std::min(args->chunkSize, size - args->totalCopySize);
             args->subs[step].stepBuff = resources->buffers[0] + (CHUNCKSIZE * step);
+
             deviceAdaptor->deviceMemcpy(
                 args->subs[step].stepBuff,
                 (char *)data + args->totalCopySize,
@@ -19,13 +21,14 @@ flagcxResult_t flagcxProxySend(sendNetResources *resources, void* data, size_t s
                 resources->cpStream,
                 args->subs[step].copyArgs
             );
+            deviceAdaptor->streamSynchronize(resources->cpStream);
             args->totalCopySize += args->subs[args->waitCopy++ & stepMask].stepSize;
         }
 
         if(args->copied < args->waitCopy){
-            if(deviceAdaptor->streamQuery(resources->cpStream) == flagcxSuccess) {
+            //if(deviceAdaptor->streamQuery(resources->cpStream) == flagcxSuccess) {
                 args->copied++;
-            }
+            //}
         }
         
         if(args->posted < args->copied){
@@ -97,6 +100,7 @@ flagcxResult_t flagcxProxyRecv(recvNetResources *resources, void* data, size_t s
 
         if(args->waitCopy < args->flushed){
             int step = args->waitCopy & stepMask;
+
             deviceAdaptor->deviceMemcpy(
                 (char *)data + args->totalCopySize,
                 args->subs[step].stepBuff,
@@ -105,11 +109,14 @@ flagcxResult_t flagcxProxyRecv(recvNetResources *resources, void* data, size_t s
                 resources->cpStream,
                 args->subs[step].copyArgs
             );
+            deviceAdaptor->streamSynchronize(resources->cpStream);
             args->totalCopySize += args->subs[args->waitCopy++ & stepMask].stepSize;
         }
 
         if(args->copied < args->waitCopy){
-            if(deviceAdaptor->streamQuery(resources->cpStream) == flagcxSuccess) {
+            //auto ret = deviceAdaptor->streamQuery(resources->cpStream);
+            auto ret = flagcxSuccess;
+            if(ret == flagcxSuccess) {
                 args->copied++;
             }
         }

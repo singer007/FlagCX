@@ -35,7 +35,6 @@ flagcxResult_t gcuAdaptorDeviceMemset(void *ptr, int value, size_t size, flagcxM
     return flagcxSuccess;
 }
 
-//TODO: unsupported
 flagcxResult_t gcuAdaptorDeviceMalloc(void **ptr, size_t size, flagcxMemType_t type) {
     if (type == flagcxMemHost) {
         DEVCHECK(topsHostMalloc(ptr, size));
@@ -81,7 +80,7 @@ flagcxResult_t gcuAdaptorGdrMemAlloc(void **ptr, size_t size, void *memHandle) {
     if (ptr == NULL) {
         return flagcxInvalidArgument;
     }
-    DEVCHECK(topsMalloc(ptr, size));
+    DEVCHECK(topsExtMallocWithFlags(ptr, size, topsMallocHostAccessable));
     return flagcxSuccess;
 }
 
@@ -131,13 +130,47 @@ flagcxResult_t gcuAdaptorStreamQuery(flagcxStream_t stream) {
     return res;
 }
 
+struct LaunchConfig {
+  void (*fn)(void *);
+  void *args;
+
+  topsEvent_t event;
+};
+
+void topsHostFunc(topsStream_t stream, topsError_t status, void* userData) {
+  struct LaunchConfig* pData = (struct LaunchConfig*)userData;
+
+  //pData->fn(pData->args);
+  pthread_t thread;
+  pthread_create(&thread, NULL, (void* (*)(void*))pData->fn, (void *)pData->args);
+  //thread.detach();
+
+  auto ret = (topsEventRecord(pData->event, stream));
+  (void)ret;
+}
+
+void topsEventReleaseFunc(topsStream_t stream, topsError_t status, void* userData) {
+  topsEvent_t event = (topsEvent_t)userData;
+  auto ret = (topsEventDestroy(event));
+  (void)ret;
+}
+
 //TODO: unsupported
 flagcxResult_t gcuAdaptorLaunchHostFunc(flagcxStream_t stream, void (*fn)(void *),  void *args) {
-    // if (stream != NULL) {
-    //     DEVCHECK(topsLaunchHostFunc(stream->base, fn, args));
-    // }
-    // return flagcxSuccess;
-    return flagcxNotSupported;
+    if (stream != NULL) {
+        topsEvent_t event;
+        DEVCHECK(topsEventCreateWithFlags(&event, topsEventStrongOrder));
+        struct LaunchConfig* userData = (struct LaunchConfig*)malloc(sizeof(struct LaunchConfig));
+        userData->fn = fn;
+        userData->args = args;
+        userData->event = event;
+
+        DEVCHECK(topsStreamAddCallback(stream->base, (topsStreamCallback_t)topsHostFunc, userData, topsStreamCallbackBlocking));
+        DEVCHECK(topsStreamWaitEvent(stream->base, event, 0));
+        DEVCHECK(topsStreamAddCallback(stream->base, (topsStreamCallback_t)topsEventReleaseFunc, (void*)event, topsStreamCallbackBlocking));
+    }
+    return flagcxSuccess;
+    //return flagcxNotSupported;
 }
 
 struct flagcxDeviceAdaptor gcuAdaptor {

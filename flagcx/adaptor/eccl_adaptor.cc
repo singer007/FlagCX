@@ -101,35 +101,64 @@ flagcxResult_t ecclAdaptorCommGetAsyncError(flagcxInnerComm_t comm, flagcxResult
     return (flagcxResult_t)e2f_ret_map[ecclCommGetAsyncError(comm->base, (ecclResult_t *)&asyncError)];
 }
 
-//TODO: unsupported
 flagcxResult_t ecclAdaptorReduce(const void* sendbuff, void* recvbuff, size_t count,
                                  flagcxDataType_t datatype, flagcxRedOp_t op, int root,
                                  flagcxInnerComm_t comm, flagcxStream_t stream) {
-    return flagcxUnhandledDeviceError;
+    return (flagcxResult_t)ecclReduce(sendbuff, recvbuff, count, (ecclDataType_t)datatype, (ecclRedOp_t)op, root, comm->base, stream->base);
 }
 
-//TODO: unsupported
 flagcxResult_t ecclAdaptorGather(const void* sendbuff, void* recvbuff, size_t count,
                                  flagcxDataType_t datatype, int root, flagcxInnerComm_t comm,
                                  flagcxStream_t stream) {
-    return flagcxUnhandledDeviceError;
+    int rank, nranks;
+    ecclResult_t res = ecclSuccess;
+    res = ecclCommUserRank(comm->base, &rank);
+    res = ecclCommCount(comm->base, &nranks);
+
+    size_t size = count * getFlagcxDataTypeSize(datatype);
+    char* buffer = static_cast<char*>(recvbuff);
+
+    res = ecclGroupStart();
+    if (rank == root) {
+        for (int r = 0; r < nranks; r++) {
+            res = ecclRecv(static_cast<void*>(buffer + r * size), size, ecclChar, r, comm->base, stream->base);
+        }
+    }
+    res = ecclSend(sendbuff, size, ecclChar, root, comm->base, stream->base);
+    res = ecclGroupEnd();
+
+    return (flagcxResult_t)res;
 }
 
-//TODO: unsupported
 flagcxResult_t ecclAdaptorScatter(const void* sendbuff, void* recvbuff, size_t count,
                                   flagcxDataType_t datatype, int root, flagcxInnerComm_t comm,
                                   flagcxStream_t stream) {
-    return flagcxUnhandledDeviceError;
+    int rank, nranks;
+    ecclResult_t res = ecclSuccess;
+    res = ecclCommUserRank(comm->base, &rank);
+    res = ecclCommCount(comm->base, &nranks);
+
+    size_t size = count * getFlagcxDataTypeSize(datatype);
+    const char* buffer = static_cast<const char*>(sendbuff);
+
+    res = ecclGroupStart();
+    if (rank == root) {
+        for (int r = 0; r < nranks; r++) {
+            res = ecclSend(static_cast<const void*>(buffer + r * size), size, ecclChar, r, comm->base, stream->base);
+        }
+    }
+    res = ecclRecv(recvbuff, size, ecclChar, root, comm->base, stream->base);
+    res = ecclGroupEnd();
+
+    return (flagcxResult_t)res;
 }
 
-//TODO: unsupported
 flagcxResult_t ecclAdaptorBroadcast(const void* sendbuff, void* recvbuff, size_t count,
                                     flagcxDataType_t datatype, int root, flagcxInnerComm_t comm,
                                     flagcxStream_t stream) {
-    return flagcxUnhandledDeviceError;
+    return (flagcxResult_t)ecclBroadcast(sendbuff, recvbuff, count, (ecclDataType_t)datatype, root, comm->base, stream->base);
 }
 
-//TODO: unsupported
 flagcxResult_t ecclAdaptorAllReduce(const void* sendbuff, void* recvbuff, size_t count,
                                     flagcxDataType_t datatype, flagcxRedOp_t op,
                                     flagcxInnerComm_t comm, flagcxStream_t stream) {

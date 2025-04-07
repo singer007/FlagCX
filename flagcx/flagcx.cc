@@ -297,6 +297,7 @@ flagcxResult_t flagcxCommInitRank(flagcxComm_t *comm, int nranks, flagcxUniqueId
     }
     (*comm)->homo_inter_rank = clusterInterRanks[clusterIdData[rank]] - start;
 
+    printf("hello from s60\n");
     INFO(FLAGCX_INIT, "rank = %d, nranks = %d, nclusters = %d, cluster_id = %d, cluster_size = %d, cluster_inter_rank = %d, homo_rank = %d, homo_root_rank = %d, homo_inter_rank = %d, homo_ranks = %d",
          rank,
          nranks,
@@ -535,6 +536,7 @@ flagcxResult_t flagcxGather(const void *sendbuff, void *recvbuff, size_t count,
             }
 
             deviceAdaptor->streamSynchronize(stream);
+            printf("########################## intra-cluster gather FINISH\n\n");
 
             // inter-cluster sendrecv
             bool fwd_root = comm->cluster_inter_ranks[comm->cluster_ids[root]] != root;
@@ -570,6 +572,7 @@ flagcxResult_t flagcxGather(const void *sendbuff, void *recvbuff, size_t count,
             flagcxGroupEnd();
 
             deviceAdaptor->streamSynchronize(stream);
+            printf("########################## inter-cluster send/recv FINISH\n\n");
 
             // intra-cluster sendrecv if homo_inter_rank != root_rank in the root cluster
             if (fwd_root && is_root_cluster)
@@ -601,6 +604,7 @@ flagcxResult_t flagcxGather(const void *sendbuff, void *recvbuff, size_t count,
                 }
                 flagcxGroupEnd();
             }
+            printf("########################## intra-cluster send/recv FINISH\n\n");
 
             if (comm->homo_rank == comm->homo_inter_rank && comm->rank != root)
             {

@@ -12,6 +12,7 @@
 #include "socket.h"
 #include "net.h"
 #include "adaptor.h"
+#include "enflame_adaptor.h"
 #define ENABLE_TIMER 0
 #include "timer.h"
 
@@ -186,7 +187,6 @@ inline void* flagcxProxyProgress(void *proxyState_){
     while(!flagcxProdProgChannelListEmpty(proxyState->prodProgChannelHead)){
       commplete = false;
       struct flagcxProxyOps* proxyOps = flagcxProdProgChannelListDeList(&proxyState->prodProgChannelHead);
-
       flagcxConsProgChannelListEnList(&proxyState->consProgChannelHead, proxyOps);
       struct flagcxIntruQueue<struct flagcxProxyOp, &flagcxProxyOp::next> *queue;
       queue = &proxyOps->prodPeers.sendQueue;
