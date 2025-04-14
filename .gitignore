@@ -8,3 +8,4 @@ plugin/*/*.so
 
 # Ignore egg-info directory
 plugin/*/*.egg-info
+plugin/torch/dist/

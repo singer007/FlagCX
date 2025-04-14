@@ -8,12 +8,14 @@ if '--adaptor' in sys.argv:
     arg_index = sys.argv.index('--adaptor')
     sys.argv.remove("--adaptor")
     if arg_index < len(sys.argv):
-        assert sys.argv[arg_index] in ["nvidia", "iluvatar_corex", "cambricon"], f"Invalid adaptor: {adaptor_flag}"
+        assert sys.argv[arg_index] in ["nvidia", "iluvatar_corex", "cambricon", "enflame"], f"Invalid adaptor: {adaptor_flag}"
         print(f"Using {sys.argv[arg_index]} adaptor")
         if sys.argv[arg_index] == "iluvatar_corex":
             adaptor_flag = "-DUSE_ILUVATAR_COREX_ADAPTOR"
         elif sys.argv[arg_index] == "cambricon":
             adaptor_flag = "-DUSE_CAMBRICON_ADAPTOR"
+        elif sys.argv[arg_index] == "enflame":
+            adaptor_flag = "-DUSE_ENFLAME_ADAPTOR"
     else:
         print("No adaptor provided after '--adaptor'. Using default nvidia adaptor")
     sys.argv.remove(sys.argv[arg_index])
@@ -49,6 +51,14 @@ elif adaptor_flag == "-DUSE_CAMBRICON_ADAPTOR":
     include_dirs += [f"{neuware_home_path}/include", torch_mlu_include_dir]
     library_dirs += [f"{neuware_home_path}/lib64", torch_mlu_lib_dir]
     libs += ["cnrt", "cncl", "torch_mlu"]
+elif adaptor_flag == "-DUSE_ENFLAME_ADAPTOR":
+    import torch_gcu
+    torch_gcu_home = torch_gcu.__file__.split("__init__")[0]
+    torch_gcu_include_dir = os.path.join(torch_gcu_home, "include")
+    torch_gcu_lib_dir = os.path.join(torch_gcu_home, "lib")
+    include_dirs += ["/opt/tops/include", torch_gcu_include_dir]
+    library_dirs += ["/opt/tops/lib", torch_gcu_lib_dir]
+    libs += ["topsrt", "torch_gcu"]
 
 module = cpp_extension.CppExtension(
     name='flagcx',

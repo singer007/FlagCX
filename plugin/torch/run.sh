@@ -18,7 +18,8 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 # export LD_PRELOAD=/usr/local/lib/libgloo.so
 # export LD_PRELOAD=/usr/local/nccl/build/lib/libnccl.so
 export TORCH_DISTRIBUTED_DETAIL=DEBUG
-CMD='torchrun --nproc_per_node 8 --nnodes=1 --node_rank=0 --master_addr="172.24.135.58" --master_port=8281 example.py'
+export GLOO_SOCKET_IFNAME=ens42f0
+CMD='torchrun --nproc_per_node 8 --nnodes=1 --node_rank=0 --master_addr="10.9.113.196" --master_port=12355 example_gcu.py'
 
 echo $CMD
 eval $CMD
