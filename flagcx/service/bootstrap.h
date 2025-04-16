@@ -71,6 +71,29 @@ flagcxResult_t AllGatherBootstrap(void* commState, const void* sendbuff, void* r
  */
 flagcxResult_t AllReduceBootstrap(void* commState, const void* sendbuff, void* recvbuff, size_t count,
                                  flagcxDataType_t datatype, flagcxRedOp_t op);
+/*
+ * Reduce
+ *
+ * Reduces data arrays of length count(NOT bytes size) in sendbuff using op operation, and
+ * leaves identical copies of result on root recvbuff.
+ *
+ * In-place operation will happen if sendbuff == recvbuff.
+ */
+flagcxResult_t ReduceBootstrap(void* commState, const void* sendbuff, void* recvbuff, size_t count,
+                                 flagcxDataType_t datatype, flagcxRedOp_t op, int root);
+/*
+ * Reduce-Scatter
+ *
+ * Reduces data in sendbuff using op operation and leaves reduced result
+ * scattered over the devices so that recvbuff on rank i will contain the i-th
+ * block of the result.
+ * Assumes sendcount is equal to nranks*recvcount, which means that sendbuff
+ * should have a size of at least nranks*recvcount elements.
+ *
+ * In-place operations will happen if recvbuff == sendbuff + rank * recvcount.
+ */
+flagcxResult_t ReduceScatterBootstrap(void* commState, const void* sendbuff, void* recvbuff,
+                                      size_t recvcount, flagcxDataType_t datatype, flagcxRedOp_t op);
 
 /*
  * All-to-all
