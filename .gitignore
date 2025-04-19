@@ -5,7 +5,15 @@ test/*/build
 
 # Ignore compiled Python files and shared object files
 plugin/*/*.so
+plugin/*/*/*.so
+plugin/*/*/__pycache__
 
 # Ignore egg-info directory
 plugin/*/*.egg-info
+<<<<<<< HEAD
 plugin/torch/dist/
+=======
+
+# Ignore vscode workspace folder
+.vscode
+>>>>>>> 015542c91aaa163296507049c395fbd1854c411d

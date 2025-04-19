@@ -1,8 +1,7 @@
 #include "net.h"
+#include "adaptor.h"
 #include "device.h"
 #include "proxy.h"
-#include "adaptor.h"
-#include "enflame_adaptor.h"
 
 flagcxResult_t flagcxProxySend(sendNetResources *resources, void* data, size_t size, flagcxProxyArgs *args){
     if(args->transmitted < args->chunkSteps){
@@ -47,13 +46,16 @@ flagcxResult_t flagcxProxySend(sendNetResources *resources, void* data, size_t s
                 args->transmitted ++;
             }
         }
+    } else if (!__atomic_load_n(&args->hlArgs.retLaunch, __ATOMIC_RELAXED)) {
+      if (!args->hlArgs.stopLaunch)
+        args->hlArgs.stopLaunch = 1;
+    } else {
+      INFO(FLAGCX_INIT, "%s:%d done", __func__, __LINE__);
+      
+      args->done = true;
     }
-    else if(!__atomic_load_n(&args->hlArgs.retLaunch, __ATOMIC_RELAXED)){
-        if(!args->hlArgs.stopLaunch) args->hlArgs.stopLaunch = 1;
-    }
-    else args->done = true;
 
-    return flagcxSuccess;
+  return flagcxSuccess;
 }
 
 flagcxResult_t flagcxProxyRecv(recvNetResources *resources, void* data, size_t size, flagcxProxyArgs *args){
@@ -120,30 +122,30 @@ flagcxResult_t flagcxProxyRecv(recvNetResources *resources, void* data, size_t s
                 args->copied++;
             }
         }
+  } else if (!__atomic_load_n(&args->hlArgs.retLaunch, __ATOMIC_RELAXED)) {
+    if (!args->hlArgs.stopLaunch)
+      args->hlArgs.stopLaunch = 1;
+  } else {
+    INFO(FLAGCX_INIT, "%s:%d done", __func__, __LINE__);
+    args->done = true;
+  }
 
-    }
-    else if(!__atomic_load_n(&args->hlArgs.retLaunch, __ATOMIC_RELAXED)){
-        if(!args->hlArgs.stopLaunch) args->hlArgs.stopLaunch = 1;
-    }
-    else args->done = true;
-    
-    
-    return flagcxSuccess;
+  return flagcxSuccess;
 }
 
-flagcxResult_t flagcxSendProxyFree(sendNetResources *resources){
-    flagcxNetIb.deregMr(resources->netSendComm, resources->mhandles[0]);
-    flagcxNetIb.closeSend(resources->netSendComm);
-    deviceAdaptor->gdrMemFree(resources->buffers[0], NULL);
-    deviceAdaptor->streamDestroy(resources->cpStream);
-    return flagcxSuccess;
+flagcxResult_t flagcxSendProxyFree(sendNetResources *resources) {
+  flagcxNetIb.deregMr(resources->netSendComm, resources->mhandles[0]);
+  flagcxNetIb.closeSend(resources->netSendComm);
+  deviceAdaptor->gdrMemFree(resources->buffers[0], NULL);
+  deviceAdaptor->streamDestroy(resources->cpStream);
+  return flagcxSuccess;
 }
 
-flagcxResult_t flagcxRecvProxyFree(recvNetResources *resources){
-    flagcxNetIb.deregMr(resources->netRecvComm, resources->mhandles[0]);
-    flagcxNetIb.closeRecv(resources->netRecvComm);
-    flagcxNetIb.closeListen(resources->netListenComm);
-    deviceAdaptor->gdrMemFree(resources->buffers[0], NULL);
-    deviceAdaptor->streamDestroy(resources->cpStream);
-    return flagcxSuccess;
+flagcxResult_t flagcxRecvProxyFree(recvNetResources *resources) {
+  flagcxNetIb.deregMr(resources->netRecvComm, resources->mhandles[0]);
+  flagcxNetIb.closeRecv(resources->netRecvComm);
+  flagcxNetIb.closeListen(resources->netListenComm);
+  deviceAdaptor->gdrMemFree(resources->buffers[0], NULL);
+  deviceAdaptor->streamDestroy(resources->cpStream);
+  return flagcxSuccess;
 }

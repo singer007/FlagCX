@@ -49,9 +49,9 @@ int main(int argc, char *argv[]){
     
     for (size_t size = min_bytes; size <= max_bytes; size *= step_factor) {
         count = size / sizeof(float);
-        devHandle->deviceMalloc(&sendbuff, size, flagcxMemDevice);
-        devHandle->deviceMalloc(&recvbuff, size, flagcxMemDevice);
-        devHandle->deviceMalloc(&hello, size, flagcxMemHost);
+        devHandle->deviceMalloc(&sendbuff, size, flagcxMemDevice, NULL);
+        devHandle->deviceMalloc(&recvbuff, size, flagcxMemDevice, NULL);
+        devHandle->deviceMalloc(&hello, size, flagcxMemHost, NULL);
         devHandle->deviceMemset(hello, 0, size, flagcxMemHost, NULL);
 
         strcpy((char *)hello,            "_0x1234");
@@ -69,11 +69,10 @@ int main(int argc, char *argv[]){
 
         printf("S60 warmup run ... sendbuff %p recvbuff %p\n", sendbuff, recvbuff);
         for(int i=0;i<num_warmup_iters;i++){
-            flagcxGroupStart();
+            flagcxGroupStart(comm);
             flagcxSend(sendbuff, count, DATATYPE, sendPeer, comm, stream);
             flagcxRecv(recvbuff, count, DATATYPE, recvPeer, comm, stream);
-            printf("S60 begin call flagcxGroupEnd ... \n");
-            flagcxGroupEnd();
+            flagcxGroupEnd(comm);
         }
         printf("S60 warmup run async...\n");
         devHandle->streamSynchronize(stream);
@@ -83,10 +82,10 @@ int main(int argc, char *argv[]){
 
         tim.reset();
         for(int i=0;i<num_iters;i++){
-            flagcxGroupStart();
+            flagcxGroupStart(comm);
             flagcxSend(sendbuff, count, DATATYPE, sendPeer, comm, stream);
             flagcxRecv(recvbuff, count, DATATYPE, recvPeer, comm, stream);
-            flagcxGroupEnd();
+            flagcxGroupEnd(comm);
         }
         devHandle->streamSynchronize(stream);
 
@@ -110,9 +109,9 @@ int main(int argc, char *argv[]){
             printf("%s\n", (const char *)((char *)hello + size/3*2));
         }
 
-        devHandle->deviceFree(sendbuff, flagcxMemDevice);
-        devHandle->deviceFree(recvbuff, flagcxMemDevice);
-        devHandle->deviceFree(hello, flagcxMemHost);
+        devHandle->deviceFree(sendbuff, flagcxMemDevice, NULL);
+        devHandle->deviceFree(recvbuff, flagcxMemDevice, NULL);
+        devHandle->deviceFree(hello, flagcxMemHost, NULL);
 
     }
 

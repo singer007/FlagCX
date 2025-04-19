@@ -1,7 +1,10 @@
 import os
 import sys
 from setuptools import setup
+# Disable auto load flagcx when setup
+os.environ["TORCH_DEVICE_BACKEND_AUTOLOAD"] = "0"
 from torch.utils import cpp_extension
+from setuptools import setup, find_packages
 
 adaptor_flag = "-DUSE_NVIDIA_ADAPTOR"
 if '--adaptor' in sys.argv:
@@ -20,9 +23,9 @@ if '--adaptor' in sys.argv:
         print("No adaptor provided after '--adaptor'. Using default nvidia adaptor")
     sys.argv.remove(sys.argv[arg_index])
 
-sources = ["src/backend_flagcx.cpp"]
+sources = ["flagcx/src/backend_flagcx.cpp", "flagcx/src/utils_flagcx.cpp"]
 include_dirs = [
-    f"{os.path.dirname(os.path.abspath(__file__))}/include",
+    f"{os.path.dirname(os.path.abspath(__file__))}/flagcx/include",
     f"{os.path.dirname(os.path.abspath(__file__))}/../../flagcx/include",
 ]
 
@@ -44,10 +47,9 @@ elif adaptor_flag == "-DUSE_CAMBRICON_ADAPTOR":
     import torch_mlu
     neuware_home_path=os.getenv("NEUWARE_HOME")
     pytorch_home_path=os.getenv("PYTORCH_HOME")
-    torch_mlu_home = pytorch_home_path.split("pytorch")[0]+"torch_mlu"
-    torch_mlu_include_dir = os.path.join(torch_mlu_home, "torch_mlu/csrc")
     torch_mlu_path = torch_mlu.__file__.split("__init__")[0]
     torch_mlu_lib_dir = os.path.join(torch_mlu_path, "csrc/lib/")
+    torch_mlu_include_dir = os.path.join(torch_mlu_path, "csrc/")
     include_dirs += [f"{neuware_home_path}/include", torch_mlu_include_dir]
     library_dirs += [f"{neuware_home_path}/lib64", torch_mlu_lib_dir]
     libs += ["cnrt", "cncl", "torch_mlu"]
@@ -61,7 +63,7 @@ elif adaptor_flag == "-DUSE_ENFLAME_ADAPTOR":
     libs += ["topsrt", "torch_gcu"]
 
 module = cpp_extension.CppExtension(
-    name='flagcx',
+    name='flagcx._C',
     sources=sources,
     include_dirs=include_dirs,
     extra_compile_args={
@@ -76,5 +78,7 @@ setup(
     name="flagcx",
     version="0.1.0",
     ext_modules=[module],
-    cmdclass={'build_ext': cpp_extension.BuildExtension}
+    cmdclass={'build_ext': cpp_extension.BuildExtension},
+    packages=find_packages(),
+    entry_points={"torch.backends": ["flagcx = flagcx:init"]},
 )
