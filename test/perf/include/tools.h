@@ -1,4 +1,5 @@
 #include <cstdint>
+#include "flagcx.h"
 
 class timer {
 public:
@@ -28,3 +29,15 @@ public:
   int printBuffer;
   int root;
 };
+
+
+#define CHECK_NZ_EXIT(status, ...)                                                          \
+    do {                                                                                       \
+        if (status != flagcxSuccess) {                                           \
+            fprintf(stderr, "%s:%d: non-zero status: %d: %s, exiting... ", __FILE__, __LINE__, \
+                    status, strerror(errno));                                                  \
+            fprintf(stderr, __VA_ARGS__);                                                      \
+            fprintf(stderr, "\n");                                                             \
+            exit(-1);                                                                          \
+        }                                                                                      \
+    } while (0)

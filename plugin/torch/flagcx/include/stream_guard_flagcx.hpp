@@ -16,6 +16,10 @@
 #include "framework/core/MLUEvent.h"
 #include "framework/core/MLUStream.h"
 #include "framework/core/stream_guard.h"
+#elif USE_ENFLAME_ADAPTOR
+#include "gcu/gcu_stream.h"
+#include "gcu/gcu_event.h"
+#include "gcu/gcu_guard.h"
 #endif
 
 namespace c10d {
@@ -35,6 +39,10 @@ public:
 #elif USE_CAMBRICON_ADAPTOR
         guard_(
             torch_mlu::getStreamFromExternal(*(cnrtQueue_t *)stream, deviceId))
+#elif USE_ENFLAME_ADAPTOR
+        guard_(
+            torch_gcu::getStreamFromExternal(*(topsStream_t *)stream, deviceId))
+
 #endif
   {
   }
@@ -58,6 +66,9 @@ public:
 #elif USE_CAMBRICON_ADAPTOR
     guard_.reset_stream(
         torch_mlu::getStreamFromExternal(*(cnrtQueue_t *)stream, deviceId_));
+#elif USE_ENFLAME_ADAPTOR
+    guard_.reset_stream(
+        torch_gcu::getStreamFromExternal(*(topsStream_t *)stream, deviceId_));
 #endif
     currentStream_ = stream;
   }
@@ -76,6 +87,8 @@ private:
   c10::cuda::CUDAStreamGuard guard_;
 #elif USE_CAMBRICON_ADAPTOR
   torch_mlu::mlu::MLUStreamGuard guard_;
+#elif USE_ENFLAME_ADAPTOR
+  torch_gcu::GCUStreamGuard guard_;
 #endif
 };
 

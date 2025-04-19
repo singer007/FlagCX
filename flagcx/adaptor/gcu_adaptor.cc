@@ -35,25 +35,40 @@ flagcxResult_t gcuAdaptorDeviceMemset(void *ptr, int value, size_t size, flagcxM
     return flagcxSuccess;
 }
 
-flagcxResult_t gcuAdaptorDeviceMalloc(void **ptr, size_t size, flagcxMemType_t type) {
-    if (type == flagcxMemHost) {
-        DEVCHECK(topsHostMalloc(ptr, size));
-    } else if (type == flagcxMemDevice) {
-        DEVCHECK(topsMalloc(ptr, size));
-    } else if (type == flagcxMemManaged) {
-        //DEVCHECK(topsMallocManaged(ptr, size, topsMemAttachGlobal));
-        DEVCHECK(topsErrorNotSupported);
+
+
+flagcxResult_t gcuAdaptorDeviceMalloc(void **ptr, size_t size,
+                                       flagcxMemType_t type,
+                                       flagcxStream_t stream) {
+  if (type == flagcxMemHost) {
+    DEVCHECK(topsHostMalloc(ptr, size));
+  } else if (type == flagcxMemDevice) {
+    if (stream == NULL) {
+      DEVCHECK(topsMalloc(ptr, size));
+    } else {
+      DEVCHECK(topsMallocAsync(ptr, size, stream->base, topsDeviceMallocDefault));
     }
-    return flagcxSuccess;
+  } else if (type == flagcxMemManaged) {
+    //DEVCHECK(cudaMallocManaged(ptr, size, cudaMemAttachGlobal));
+    DEVCHECK(topsErrorNotSupported);
+  }
+  return flagcxSuccess;
 }
 
-flagcxResult_t gcuAdaptorDeviceFree(void *ptr, flagcxMemType_t type) {
-    if (type == flagcxMemHost) {
-        DEVCHECK(topsHostFree(ptr));
+flagcxResult_t gcuAdaptorDeviceFree(void *ptr, flagcxMemType_t type,
+                                     flagcxStream_t stream) {
+  if (type == flagcxMemHost) {
+    DEVCHECK(topsHostFree(ptr));
+  } else if (type == flagcxMemDevice) {
+    if (stream == NULL) {
+      DEVCHECK(topsFree(ptr));
     } else {
-        DEVCHECK(topsFree(ptr));
+      DEVCHECK(topsFreeAsync(ptr, stream->base));
     }
-    return flagcxSuccess;
+  } else if (type == flagcxMemManaged) {
+    DEVCHECK(topsFree(ptr));
+  }
+  return flagcxSuccess;
 }
 
 flagcxResult_t gcuAdaptorSetDevice(int dev) {
@@ -67,7 +82,9 @@ flagcxResult_t gcuAdaptorGetDevice(int *dev) {
 }
 
 flagcxResult_t gcuAdaptorGetDeviceCount(int *count) {
+    printf("%s:%d before get GetDeviceCount", __func__, __LINE__);
     DEVCHECK(topsGetDeviceCount(count));
+    printf("%s:%d after get GetDeviceCount", __func__, __LINE__);
     return flagcxSuccess;
 }
 
@@ -108,6 +125,22 @@ flagcxResult_t gcuAdaptorStreamDestroy(flagcxStream_t stream) {
     return flagcxSuccess;
 }
 
+flagcxResult_t gcuAdaptorStreamCopy(flagcxStream_t *newStream,
+                                     void *oldStream) {
+  (*newStream) = NULL;
+  flagcxCalloc(newStream, 1);
+  memcpy((void *)*newStream, oldStream, sizeof(topsStream_t));
+  return flagcxSuccess;
+}
+
+flagcxResult_t gcuAdaptorStreamFree(flagcxStream_t stream) {
+  if (stream != NULL) {
+    free(stream);
+    stream = NULL;
+  }
+  return flagcxSuccess;
+}
+
 flagcxResult_t gcuAdaptorStreamSynchronize(flagcxStream_t stream) {
     if (stream != NULL) {
         DEVCHECK(topsStreamSynchronize(stream->base));
@@ -128,6 +161,69 @@ flagcxResult_t gcuAdaptorStreamQuery(flagcxStream_t stream) {
         }
     }
     return res;
+}
+
+flagcxResult_t gcuAdaptorStreamWaitEvent(flagcxStream_t stream,
+                                          flagcxEvent_t event) {
+  if (stream != NULL && event != NULL) {
+    DEVCHECK(
+        //topsStreamWaitEvent(stream->base, event->base, topsEventWaitDefault));
+        topsStreamWaitEvent(stream->base, event->base, topsEventDefault));
+  }
+  return flagcxSuccess;
+}
+
+flagcxResult_t gcuAdaptorEventCreate(flagcxEvent_t *event) {
+  (*event) = NULL;
+  flagcxCalloc(event, 1);
+  DEVCHECK(topsEventCreateWithFlags((topsEvent_t *)(*event),
+                                    topsEventDisableTiming));
+  return flagcxSuccess;
+}
+
+flagcxResult_t gcuAdaptorEventDestroy(flagcxEvent_t event) {
+  if (event != NULL) {
+    DEVCHECK(topsEventDestroy(event->base));
+    free(event);
+    event = NULL;
+  }
+  return flagcxSuccess;
+}
+
+flagcxResult_t gcuAdaptorEventRecord(flagcxEvent_t event,
+                                      flagcxStream_t stream) {
+  if (event != NULL) {
+    if (stream != NULL) {
+      // DEVCHECK(topsEventRecordWithFlags(event->base, stream->base,
+      //                                   topsEventRecordDefault));
+      DEVCHECK(topsEventRecord(event->base, stream->base));
+    } else {
+      DEVCHECK(topsEventRecord(event->base));
+    }
+  }
+  return flagcxSuccess;
+}
+
+flagcxResult_t gcuAdaptorEventSynchronize(flagcxEvent_t event) {
+  if (event != NULL) {
+    DEVCHECK(topsEventSynchronize(event->base));
+  }
+  return flagcxSuccess;
+}
+
+flagcxResult_t gcuAdaptorEventQuery(flagcxEvent_t event) {
+  flagcxResult_t res = flagcxSuccess;
+  if (event != NULL) {
+    topsError_t error = topsEventQuery(event->base);
+    if (error == topsSuccess) {
+      res = flagcxSuccess;
+    } else if (error == topsErrorNotReady) {
+      res = flagcxInProgress;
+    } else {
+      res = flagcxUnhandledDeviceError;
+    }
+  }
+  return res;
 }
 
 struct LaunchConfig {
@@ -173,37 +269,80 @@ flagcxResult_t gcuAdaptorLaunchHostFunc(flagcxStream_t stream, void (*fn)(void *
     //return flagcxNotSupported;
 }
 
+flagcxResult_t gcuAdaptorGetDeviceProperties(struct flagcxDevProps *props,
+                                              int dev) {
+  if (props == NULL) {
+    return flagcxInvalidArgument;
+  }
+
+  topsDeviceProp_t devProp;
+  DEVCHECK(topsGetDeviceProperties(&devProp, dev));
+  strncpy(props->name, devProp.name, sizeof(props->name) - 1);
+  props->name[sizeof(props->name) - 1] = '\0';
+  props->pciBusId = devProp.pciBusID;
+  props->pciDeviceId = devProp.pciDeviceID;
+  props->pciDomainId = devProp.pciDomainID;
+  // TODO: see if there's another way to get this info. In some cuda versions,
+  // cudaDeviceProp does not have `gpuDirectRDMASupported` field
+  // props->gdrSupported = devProp.gpuDirectRDMASupported;
+
+  return flagcxSuccess;
+}
+
+flagcxResult_t gcuAdaptorGetDevicePciBusId(char *pciBusId, int len, int dev) {
+  if (pciBusId == NULL) {
+    return flagcxInvalidArgument;
+  }
+  DEVCHECK(topsDeviceGetPCIBusId(pciBusId, len, dev));
+  return flagcxSuccess;
+}
+
+flagcxResult_t gcuAdaptorGetDeviceByPciBusId(int *dev, const char *pciBusId) {
+  if (dev == NULL || pciBusId == NULL) {
+    return flagcxInvalidArgument;
+  }
+  DEVCHECK(topsDeviceGetByPCIBusId(dev, pciBusId));
+  return flagcxSuccess;
+}
+
 struct flagcxDeviceAdaptor gcuAdaptor {
-   "GCU",
-   // Basic functions
-   gcuAdaptorDeviceSynchronize,
-   gcuAdaptorDeviceMemcpy,
-   gcuAdaptorDeviceMemset,
-   gcuAdaptorDeviceMalloc,
-   gcuAdaptorDeviceFree,
-   gcuAdaptorSetDevice,
-   gcuAdaptorGetDevice,
-   gcuAdaptorGetDeviceCount,
-   gcuAdaptorGetVendor,
-   // GDR functions
-   NULL, // flagcxResult_t (*memHandleInit)(int dev_id, void **memHandle);
-   NULL, // flagcxResult_t (*memHandleDestroy)(int dev, void *memHandle);
-   gcuAdaptorGdrMemAlloc,
-   gcuAdaptorGdrMemFree,
-   NULL, // flagcxResult_t (*hostShareMemAlloc)(void **ptr, size_t size, void *memHandle);
-   NULL, // flagcxResult_t (*hostShareMemFree)(void *ptr, void *memHandle);
-   // Stream functions
-   gcuAdaptorStreamCreate,
-   gcuAdaptorStreamDestroy,
-   gcuAdaptorStreamSynchronize,
-   gcuAdaptorStreamQuery,
-   // Kernel launch
-   NULL, // flagcxResult_t (*launchKernel)(void *func, unsigned int block_x, unsigned int block_y, unsigned int block_z, unsigned int grid_x, unsigned int grid_y, unsigned int grid_z, void **args, size_t share_mem, void *stream, void *memHandle);
-   NULL, // flagcxResult_t (*copyArgsInit)(void **args);
-   NULL, // flagcxResult_t (*copyArgsFree)(void *args);
-   // Others
-   NULL, // flagcxResult_t (*topoGetSystem)(void *topoArgs, void **system);
-   gcuAdaptorLaunchHostFunc
+  "GCU",
+      // Basic functions
+      gcuAdaptorDeviceSynchronize, gcuAdaptorDeviceMemcpy,
+      gcuAdaptorDeviceMemset, gcuAdaptorDeviceMalloc, gcuAdaptorDeviceFree,
+      gcuAdaptorSetDevice, gcuAdaptorGetDevice, gcuAdaptorGetDeviceCount,
+      gcuAdaptorGetVendor,
+      // GDR functions
+      NULL, // flagcxResult_t (*memHandleInit)(int dev_id, void **memHandle);
+      NULL, // flagcxResult_t (*memHandleDestroy)(int dev, void *memHandle);
+      gcuAdaptorGdrMemAlloc, gcuAdaptorGdrMemFree,
+      NULL, // flagcxResult_t (*hostShareMemAlloc)(void **ptr, size_t size, void
+            // *memHandle);
+      NULL, // flagcxResult_t (*hostShareMemFree)(void *ptr, void *memHandle);
+      // Stream functions
+      gcuAdaptorStreamCreate, gcuAdaptorStreamDestroy, gcuAdaptorStreamCopy,
+      gcuAdaptorStreamFree, gcuAdaptorStreamSynchronize,
+      gcuAdaptorStreamQuery, gcuAdaptorStreamWaitEvent,
+      // Event functions
+      gcuAdaptorEventCreate, gcuAdaptorEventDestroy, gcuAdaptorEventRecord,
+      gcuAdaptorEventSynchronize, gcuAdaptorEventQuery,
+      // Kernel launch
+      NULL, // flagcxResult_t (*launchKernel)(void *func, unsigned int block_x,
+            // unsigned int block_y, unsigned int block_z, unsigned int grid_x,
+            // unsigned int grid_y, unsigned int grid_z, void **args, size_t
+            // share_mem, void *stream, void *memHandle);
+      NULL, // flagcxResult_t (*copyArgsInit)(void **args);
+      NULL, // flagcxResult_t (*copyArgsFree)(void *args);
+      // Others
+      gcuAdaptorGetDeviceProperties, // flagcxResult_t
+                                      // (*getDeviceProperties)(struct
+                                      // flagcxDevProps *props, int dev);
+      gcuAdaptorGetDevicePciBusId, // flagcxResult_t (*getDevicePciBusId)(char
+                                    // *pciBusId, int len, int dev);
+      gcuAdaptorGetDeviceByPciBusId, // flagcxResult_t
+                                      // (*getDeviceByPciBusId)(int
+                                      // *dev, const char *pciBusId);
+      gcuAdaptorLaunchHostFunc
 };
 
 #endif // USE_ENFLAME_ADAPTOR

@@ -225,35 +225,19 @@ flagcxResult_t ecclAdaptorGroupEnd() {
 struct flagcxCCLAdaptor ecclAdaptor = {
   "ECCL",
   // Basic functions
-  ecclAdaptorGetVersion,
-  ecclAdaptorGetUniqueId,
-  ecclAdaptorGetErrorString,
+  ecclAdaptorGetVersion, ecclAdaptorGetUniqueId, ecclAdaptorGetErrorString,
   ecclAdaptorGetLastError,
   // Communicator functions
-  ecclAdaptorCommInitRank,
-  ecclAdaptorCommFinalize,
-  ecclAdaptorCommDestroy,
-  ecclAdaptorCommAbort,
-  ecclAdaptorCommResume,
-  ecclAdaptorCommSuspend,
-  ecclAdaptorCommCount,
-  ecclAdaptorCommCuDevice,
-  ecclAdaptorCommUserRank,
+  ecclAdaptorCommInitRank, ecclAdaptorCommFinalize, ecclAdaptorCommDestroy,
+  ecclAdaptorCommAbort, ecclAdaptorCommResume, ecclAdaptorCommSuspend,
+  ecclAdaptorCommCount, ecclAdaptorCommCuDevice, ecclAdaptorCommUserRank,
   ecclAdaptorCommGetAsyncError,
   // Communication functions
-  ecclAdaptorReduce,
-  ecclAdaptorGather,
-  ecclAdaptorScatter,
-  ecclAdaptorBroadcast,
-  ecclAdaptorAllReduce,
-  ecclAdaptorReduceScatter,
-  ecclAdaptorAllGather,
-  ecclAdaptorAlltoAll,
-  ecclAdaptorSend,
-  ecclAdaptorRecv,
+  ecclAdaptorReduce, ecclAdaptorGather, ecclAdaptorScatter,
+  ecclAdaptorBroadcast, ecclAdaptorAllReduce, ecclAdaptorReduceScatter,
+  ecclAdaptorAllGather, ecclAdaptorAlltoAll, nullptr,
+  ecclAdaptorSend, ecclAdaptorRecv,
   // Group semantics
-  ecclAdaptorGroupStart,
-  ecclAdaptorGroupEnd
-};
+  ecclAdaptorGroupStart, ecclAdaptorGroupEnd};
 
 #endif // USE_CAMBRICON_ADAPTOR

@@ -12,8 +12,7 @@ MPI_INCLUDE = $(MPI_HOME)/include
 MPI_LIB = $(MPI_HOME)/lib
 MPI_LINK = -lmpi
 COMPILER = g++
-EXTRA_COMPILER_FLAG = -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wl,-rpath,/home/singer.huang/pcals_gitee/flagcx_test/s60/FlagCX/build/lib -std=c++11 -g -L/home/singer.huang/pcals_gitee/flagcx_test/s60/FlagCX/build/lib
-#EXTRA_COMPILER_FLAG = -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -std=c++11 -g -L
+EXTRA_COMPILER_FLAG = -Wall -Wextra -Wno-unused-parameter -Wno-unused-function -Wl,-rpath,/usr/local/flagcx/lib -L /usr/local/flagcx/lib -std=c++11 -g
 
 INCLUDEDIR := $(abspath include)
 LIBSRCFILES:= $(wildcard *.cc)

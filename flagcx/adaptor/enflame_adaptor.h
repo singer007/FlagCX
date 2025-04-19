@@ -16,6 +16,10 @@ struct flagcxStream {
     topsStream_t base;
 };
 
+struct flagcxEvent {
+  topsEvent_t base;
+};
+
 #define DEVCHECK(func) {                                         \
    int ret = func;                                               \
    if(ret != topsSuccess) return flagcxUnhandledDeviceError;     \
